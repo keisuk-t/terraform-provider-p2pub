@@ -59,7 +59,10 @@ func resourceSystemStorage() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"userdata": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
 		},
 	}
 }
@@ -143,6 +146,31 @@ func setPassword(api *p2pubapi.API, gis, iba, password string) error {
 	return nil
 }
 
+func setUserData(api *p2pubapi.API, gis, iba, userdata string) error {
+	info, err := getSystemStorageInfo(api, gis, iba)
+	if err != nil {
+		return err
+	}
+	attachStatus := p2pubapi.NotAttached
+	if info.ResourceStatus == p2pubapi.Attached.String() {
+		attachStatus = p2pubapi.Attached
+	}
+	args := protocol.UserDataSet{
+		GisServiceCode: gis,
+		IbaServiceCode: iba,
+		UserData: userdata,
+	}
+	var res = protocol.UserDataSetResponse{}
+	if err := p2pubapi.Call(*api, args, &res); err != nil {
+		return err
+	}
+	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
+		p2pubapi.InService, attachStatus, TIMEOUT); err != nil {
+			return err
+		}
+	return nil
+}
+
 //
 // reosurce operations
 //
@@ -188,6 +216,12 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	if d.Get("userdata") != nil {
+		if err := setUserData(api, gis, iba, d.Get("userdata").(string)); err != nil {
+			return err
+		}
+	}  	
+
 	d.SetId(iba)
 
 	return resourceSystemStorageRead(d, m)
@@ -217,7 +251,7 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface {}) error {
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
 
-	if !d.HasChange("label") && !d.HasChange("root_ssh_key") && !d.HasChange("root_password") {
+	if !d.HasChange("label") && !d.HasChange("root_ssh_key") && !d.HasChange("root_password") && !d.HasChange("userdata") {
 		return nil
 	}
 
@@ -262,6 +296,19 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface {}) error {
 		}
 		d.SetPartial("root_password")
 	}
+
+	if d.HasChange("userdata") {
+		if info.ResourceStatus == p2pubapi.Attached.String() && !vm_stopped {
+			if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "Off"); err != nil {
+				return err
+			}
+			vm_stopped = true
+		}
+		if err := setUserData(api, gis, d.Id(), d.Get("userdata").(string)); err != nil {
+			return err
+		}
+		d.SetPartial("userdata")
+	}	
 
 	d.Partial(false)
 

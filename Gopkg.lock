@@ -255,13 +255,13 @@
   revision = "2658be15c5f05e76244154714161f17e3e77de2e"
 
 [[projects]]
+  branch = "master"
   name = "github.com/iij/p2pubapi"
   packages = [
     ".",
     "protocol"
   ]
-  revision = "94a32a317aaff4d0d81cd1c8ed3ca25c8df0bf60"
-  version = "v0.1.2"
+  revision = "a102bd166aaa67ef4092f9eb0dd921c48ca38ab8"
 
 [[projects]]
   name = "github.com/jmespath/go-jmespath"
@@ -475,6 +475,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c924f82efc3ab5858e096ba5cf110996c5c762e96acaaa4c383c1c8455e14e6f"
+  inputs-digest = "b326461e7e12562b43b416b9eceb70fd90dc606d8866021c282d50be4c8332b5"
   solver-name = "gps-cdcl"
   solver-version = 1
