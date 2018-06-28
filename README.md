@@ -24,8 +24,22 @@ providers {
 ```
 
 ### プロバイダーの設定
+P2 PUBをTerraformで操作するための運用管理担当者アカウント（マスターID）を用意します。
 
-tf ファイルに API キーと gis サービスコードを記述します。Terraform で管理されるリソース(仮想サーバー等)はここで指定した gis サービスコード配下の契約になります。
+[IIJサービスオンライン](https://help.iij.ad.jp/) にて、
+サービス契約ID(gisサービスコード)に対して、下記両方の役割として登録された担当者を追加します。
+- 「サービスグループの運用管理担当者」
+- 「サービスの運用管理担当者」
+
+担当者の追加方法はIIJサービスオンラインのマニュアルを参照してください。
+
+[IIJ：ご利用にあたって](https://help.iij.ad.jp/admin/guidance/termsofuse/index.cfm)
+
+次に、マスターIDに紐づくAPIキーを発行します。APIキーの発行方法は下記マニュアルを参照してください。
+
+[AccessKey](http://manual.iij.jp/p2/pubapi/59950199.html)
+
+最後に、tf ファイルに API キーと gis サービスコードを記述します。Terraform で管理されるリソース(仮想サーバー等)はここで指定した gis サービスコード配下の契約になります。
 
 ```
 provider "p2pub" {
