@@ -263,18 +263,12 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 
-	if d.Get("source_image") != nil {
+	if d.Get("source_image") != nil && len(d.Get("source_image").(map[string]interface{})) != 0 {
 		src_gis := d.Get("source_image.gis_service_code").(string)
 		src_iar := d.Get("source_image.iar_service_code").(string)
 		image_id := d.Get("source_image.image_id").(string)
-		if src_gis == "" {
-			return errors.New("source_image: gis servicecode is required.")
-		}
-		if src_iar == "" {
-			return errors.New("source_image: iar servicecode is required.")
-		}
-		if image_id == "" {
-			return errors.New("source_image: image_id is required.")
+		if src_gis != gis {
+			return errors.New("Inter-contract image restore is currently not supported.")
 		}
 		if err := restore(api, gis, iba, src_iar, image_id); err != nil {
 			return err
