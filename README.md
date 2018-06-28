@@ -171,6 +171,85 @@ There are no attributes.
 |-|-|-|
 |```address_num```| amount of global ip addresses additionally allocate the contract (0~15) | |
 
+### ```p2pub_load_balancer```
+
+[FW+LB dedicated type](http://manual.iij.jp/p2/pub/b-6-7.html)
+
+|key|value||required|
+|-|-|-|-|
+|```type```|type|D10M, D100M, D150M, D1000M|o|
+|```redundant```|redundancy|"Yes" "No"|o|
+|```external_type```|network type|"Global", "PrivateStandard"|o|
+|```internal_type```|network type|"PrivateStandard"|o|
+|```trafficip_list```|list of trafficips|array|o|
+|```trafficip_list.ipv4_name```|name of trafficip|string|o|
+|```filter_in_list```|rules of firewall (in)|array||
+|```filter_in_list.source_network```|source network|ipaddr/mask, ANY||
+|```filter_in_list.destination_network```|destination network|ipaddr/mask, ANY||
+|```filter_in_list.destination_port```|destination port|number, ANY||
+|```filter_in_list.protocol```|protocol|TCP, UDP||
+|```filter_in_list.action```|action|ACCEPT, DROP, REJECT||
+|```filter_in_list.label```|label|string||
+|```filter_out_list```|rules of firewall (out)|array||
+|```filter_out_list.source_network```|source network|ipaddr/mask, ANY||
+|```filter_out_list.destination_network```|destination network|ipaddr/mask, ANY||
+|```filter_out_list.destination_port```|destination port|number, ANY||
+|```filter_out_list.protocol```|protocol|TCP, UDP||
+|```filter_out_list.action```|action|ACCEPT, DROP, REJECT||
+|```filter_out_list.label```|label|string||
+|```administration_server_allow_network_list```|acl for control panel of load balancer|array of ip addresses||
+
+
+**Example**
+```
+resource "p2pub_load_balancer" "vtm1" {
+    type = "D10M"
+    redundant = "No"
+
+    external_type = "Global"
+    internal_type = "PrivateStandard"
+
+    trafficip_list = [
+        { ipv4_name = "TRAFFICIP1" }
+    ]
+
+    filter_in_list = [
+        {
+            source_network = "ANY"
+            destination_network = "ANY"
+            destination_port = "80"
+            protocol = "TCP"
+            action = "ACCEPT"
+            label = "ALLOW HTTP"
+        },
+        {
+            source_network = "ANY"
+            destination_network = "ANY"
+            destination_port = "443"
+            protocol = "TCP"
+            action = "ACCEPT"
+            label = "ALLOW HTTPS"
+        }
+    ]
+
+    filter_out_list = [
+        {
+            source_network = "ANY"
+            destination_network = "ANY"
+            destination_port = "ANY"
+            protocol = "TCP"
+            action = "ACCEPT"
+            label = "ALLOW ALL TCP"
+        }
+    ]
+    administration_server_allow_network_list = [
+        "192.0.2.0/24",
+        "198.51.100.0/24",
+        "203.0.113.0/24"
+    ]
+}
+```
+
 ## Developing this provider
 
 ### Build from source
