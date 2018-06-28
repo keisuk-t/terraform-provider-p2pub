@@ -2,6 +2,7 @@ package p2pub
 
 import (
 	"time"
+	"errors"
 	
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/iij/p2pubapi"
@@ -59,7 +60,30 @@ func resourceSystemStorage() *schema.Resource {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-
+			"userdata": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"source_image": &schema.Schema{
+				Type:     schema.TypeMap,
+				Elem:     &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"gis_service_code": &schema.Schema{
+							Type: schema.TypeString,
+							Required: true,
+						},
+						"iar_service_code": &schema.Schema{
+							Type: schema.TypeString,
+							Required: true,
+						},
+						"image_id": &schema.Schema{
+							Type: schema.TypeString,
+							Required: true,
+						},
+					},
+				},
+				Optional: true,
+			},			
 		},
 	}
 }
@@ -143,6 +167,74 @@ func setPassword(api *p2pubapi.API, gis, iba, password string) error {
 	return nil
 }
 
+func setUserData(api *p2pubapi.API, gis, iba, userdata string) error {
+	info, err := getSystemStorageInfo(api, gis, iba)
+	if err != nil {
+		return err
+	}
+	attachStatus := p2pubapi.NotAttached
+	if info.ResourceStatus == p2pubapi.Attached.String() {
+		attachStatus = p2pubapi.Attached
+	}
+	args := protocol.UserDataSet{
+		GisServiceCode: gis,
+		IbaServiceCode: iba,
+		UserData: userdata,
+	}
+	var res = protocol.UserDataSetResponse{}
+	if err := p2pubapi.Call(*api, args, &res); err != nil {
+		return err
+	}
+	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
+		p2pubapi.InService, attachStatus, TIMEOUT); err != nil {
+			return err
+		}
+	return nil
+}
+
+func restore(api *p2pubapi.API, gis, iba, iar, id string) error {
+	info, err := getSystemStorageInfo(api, gis, iba)
+	if err != nil {
+		return err
+	}
+	attachStatus := p2pubapi.NotAttached
+	if info.ResourceStatus == p2pubapi.Attached.String() {
+		attachStatus = p2pubapi.Attached
+	}
+	args := protocol.Restore{
+		GisServiceCode: gis,
+		IbaServiceCode: iba,
+		IarServiceCode: iar,
+		Image: "Archive",
+		ImageId: id,
+	}
+	var res = protocol.RestoreResponse{}
+	if err := p2pubapi.Call(*api, args, &res); err != nil {
+		return err
+	}
+	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
+		p2pubapi.InService, attachStatus, TIMEOUT); err != nil {
+		return err
+	}
+	return nil
+}
+
+func copyImage(api *p2pubapi.API, src_gis, src_iar, src_id, dst_gis, dst_iar string) (string, string, error) {
+	args := protocol.StorageImageCopy{
+		SrcGisServiceCode: src_gis,
+		SrcIarServiceCode: src_iar,
+		SrcImageId: src_id,
+		DstGisServiceCode: dst_gis,
+		DstIarServiceCode: dst_iar,
+		Image: "Copy",
+	}
+	var res = protocol.StorageImageCopyResponse{}
+	if err := p2pubapi.Call(*api, args, &res); err != nil {
+		return "", "", err
+	}
+	return res.IarServiceCode, res.ImageId, nil
+}
+
 //
 // reosurce operations
 //
@@ -170,6 +262,20 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
+
+	if d.Get("source_image") != nil && len(d.Get("source_image").(map[string]interface{})) != 0 {
+		src_gis := d.Get("source_image.gis_service_code").(string)
+		src_iar := d.Get("source_image.iar_service_code").(string)
+		image_id := d.Get("source_image.image_id").(string)
+		if src_gis != gis {
+			return errors.New("Inter-contract image restore is currently not supported.")
+		}
+		if err := restore(api, gis, iba, src_iar, image_id); err != nil {
+			return err
+		}
+	}
+	
+
 	if d.Get("label") != nil && d.Get("label").(string) != "" {
 		if err := setSystemStorageLabel(api, gis, iba, d.Get("label").(string)); err != nil {
 			return err
@@ -187,6 +293,12 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	}
+
+	if d.Get("userdata") != nil {
+		if err := setUserData(api, gis, iba, d.Get("userdata").(string)); err != nil {
+			return err
+		}
+	}  	
 
 	d.SetId(iba)
 
@@ -217,7 +329,7 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface {}) error {
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
 
-	if !d.HasChange("label") && !d.HasChange("root_ssh_key") && !d.HasChange("root_password") {
+	if !d.HasChange("label") && !d.HasChange("root_ssh_key") && !d.HasChange("root_password") && !d.HasChange("userdata") {
 		return nil
 	}
 
@@ -262,6 +374,19 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface {}) error {
 		}
 		d.SetPartial("root_password")
 	}
+
+	if d.HasChange("userdata") {
+		if info.ResourceStatus == p2pubapi.Attached.String() && !vm_stopped {
+			if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "Off"); err != nil {
+				return err
+			}
+			vm_stopped = true
+		}
+		if err := setUserData(api, gis, d.Id(), d.Get("userdata").(string)); err != nil {
+			return err
+		}
+		d.SetPartial("userdata")
+	}	
 
 	d.Partial(false)
 

@@ -1,167 +1,192 @@
 # terraform-provider-p2pub
 
-Terraform Custom Provider for P2 PUB
+Terraform custom provider for [IIJ GIO P2 Public Resource](https://www.iij.ad.jp/biz/p2/public/). 
 
-# 使い方
+[日本語](README-ja.md)
 
-## セットアップ
+## Download
 
-### ビルドとインストール
+Latest release: v0.2.0 (2018-06-28)
 
-make してバイナリを作成した後、.terraformrc にパスを追加します
+- **Linux**: [terraform-provider-p2pub-linux-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.2.0/terraform-provider-p2pub-linux-amd64)
+- **Windows**: [terraform-provider-p2pub-windows-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.2.0/terraform-provider-p2pub-windows-amd64)
+- **MacOS**: [terraform-provider-p2pub-darwin-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.2.0/terraform-provider-p2pub-darwin-amd64)
 
-```
-$ make build
-$ cp terraform-provider-p2pub /path/to/install/dir
-```
+## Installation
 
-- ~/.terraformrc
+[Official Documentaion](https://www.terraform.io/docs/plugins/basics.html#installing-a-plugin).
 
-```
-providers {
-    p2pub = "/path/to/install/dir/terraform-provider-p2pub"
-}
-```
+### Linux/MacOS
 
-### プロバイダーの設定
-P2 PUBをTerraformで操作するための運用管理担当者アカウント（マスターID）を用意します。
+1. Download this plugin and copy to appropriate location.
+1. Add path to this provider in ```.terraformrc```
+   ```
+   $ cat ~/.terraformrc
+   providers {
+       p2pub = "/home/sishihara/.terraform.d/plugins/terraform-provider-p2pub"
+   }
+   ```
 
-[IIJサービスオンライン](https://help.iij.ad.jp/) にて、
-サービス契約ID(gisサービスコード)に対して、下記両方の役割として登録された担当者を追加します。
-- 「サービスグループの運用管理担当者」
-- 「サービスの運用管理担当者」
+### Windows
 
-担当者の追加方法はIIJサービスオンラインのマニュアルを参照してください。
+1. Download this plugin and copy to appropriate location.
+1. Add path to this provider in ```terraform.rc```
+   ```
+   > type C:\Users\sishihara\AppData\Roaming\terraform.rc
+   providers {
+      p2pub = "C:¥¥Users¥¥sishihara¥¥AppData¥¥Roaming¥¥terraform.d¥¥plugins¥¥windows_amd64¥¥terraform-provider-p2pub-windows-amd64.exe"
+   }
+   ```
 
-[IIJ：ご利用にあたって](https://help.iij.ad.jp/admin/guidance/termsofuse/index.cfm)
+## Usage
 
-次に、マスターIDに紐づくAPIキーを発行します。APIキーの発行方法は下記マニュアルを参照してください。
+Before using this provider, you need to get an API key (available in [here](https://help.api.iij.jp/access_keys)).
+Note that this provider requires an authority can sign up IIJ services to create P2PUB resources. Make sure your account has a role of "Service Group Administrator". check it in [IIJ Service Online](https://help.iij.ad.jp/).
 
-[AccessKey](http://manual.iij.jp/p2/pubapi/59950199.html)
+### Example
 
-最後に、tf ファイルに API キーと gis サービスコードを記述します。Terraform で管理されるリソース(仮想サーバー等)はここで指定した gis サービスコード配下の契約になります。
+In this example, the provider creates a virtual server which is accessible with ssh throught the internet:
 
 ```
 provider "p2pub" {
-    access_key_id = "<ACCESSKEY>"
-    secret_access_key = "<SECRETKEY>"
-    gis_service_code = "<SERVICECODE>"
+    access_key_id = "<YOUR ACCESS KEY ID>"
+    secret_access_key = "<YOUR SECRET ACCESS KEY>"
+    gis_service_code = "<YOUR GIS SERVICECODE>"
 }
-```
-
-設定値は環境変数から与えることもできます。
-
-|項目|環境変数名|
-|-|-|
-|```access_key_id```|```IIJAPI_ACCESS_KEY```|
-|```secret_access_key```|```IIJAPI_SECRET_KEY```|
-|```gis_service_code```|```GISSERVICECODE```|
-
-## Terraform 実行
-
-固有の手順は特にありません。通常通り ```terraform plan```, ```terraform apply```, ```terraform destroy```, etc... を実行してください。
-
-設定例は ```example/``` を参照してください。
-
-## リソース一覧
-
-### ```p2pub_virtual_server```
-
-[仮想サーバー](http://manual.iij.jp/p2/pub/b-1.html)
-
-|項目|内容|値|必須|
-|-|-|-|-|
-|```type```|仮想サーバー品目| VBxx-xx, VGxx-xx, VDxx-xx |◯|
-|```os_type```|OS種別|Linux, Windows|◯|
-|```label```|ラベル|任意の文字列||
-|```system_storage```|接続するブートデバイス|ibaサービスコード||
-|```data_storage```|接続する追加ストレージ|ibb/ibgサービスコードのリスト||
-|```private_network```|接続するプライベートネットワーク/V|ivlサービスコードのリスト||
-|```enable_global_ip```|グローバルIPアドレス使用の有無|true/false||
 
 
-```
-resource "p2pub_virtual_server" "vs1" {
+resource "p2pub_system_storage" "storage" {
+    type = "S30GB_UBUNTU16_64"
+    root_ssh_key = "${file("~/.ssh/id_rsa.pub")}"
+}
+
+resource "p2pub_virtual_server" "server" {
     type = "VB0-1"
     os_type = "Linux"
-    label = "vs-label"
-    system_storage = "iba########"
-    data_storage = ["ibg#######"]
-    private_network = ["ivl########"]
+    system_storage = "${p2pub_system_storage.storage.id}"
     enable_global_ip = true
 }
 ```
 
-### ```p2pub_system_storage```
+After applying that, you can get the virtual server's IP address from 'terraform show' output.
 
-[システムストレージ](http://manual.iij.jp/p2/pub/b-3-1.html)
+### Provider configuration
 
-|項目|内容|値|必須|
-|-|-|-|-|
-|```type```|システムストレージ品目| http://manual.iij.jp/p2/pubapi/59949023.html |◯|
-|```label```|ラベル|任意の文字列||
-|```root_ssh_key```|rootのSSH公開鍵|||
-|```root_password```|rootパスワード|||
+This provider has 4 attributes. You can also set these attributes by using environment variables.
+
+- ```access_key_id```: Access key id (required, ```$IIJAPI_ACCESS_KEY```)
+- ```secret_access_key```: Secret access key (required, ```$IIJAPI_SECRET_KEY```)
+- ```gis_service_code```: gis service code (required, ```$GISSERVICECODE```)
+- ```endpoint```: P2PUB API endpoint. currently in depvelopers use only
+
+### Resource list
+
+#### ```p2pub_virtual_server```: [Virtual Server](http://manual.iij.jp/p2/pub/b-1.html)
+
+| key | value | required |
+|-|-|-|
+|```type```| [Server type](http://manual.iij.jp/p2/pubapi/59949011.html) | o |
+|```os_type```| OS type use in the virtual server. ```Linux``` or ```Windows``` | o |
+|```server_group```| [Server group](http://manual.iij.jp/p2/pub/b-1-5.html). ```A``` or ```B``` | |
+|```label```| | |
+|```system_storage```| System Storage service code attached the virtual server | |
+|```data_storage```| List of Additional Storage service code attached the virtual server | |
+|```private_network```| List of Private Netowrk/V service code connected the virtual server | |
+|```enable_global_ip```| true if you attach a global IP address to the server. default is false | |
+
+**Example**
 
 ```
-resource "p2pub_system_storage" "ss1" {
-    type = "S30GB_CENTOS7_64"
-    label = "ss-label"
-    root_ssh_key = "<SSH_PUBLIC_KEY>"
+resource "p2pub_virtual_server" "server" {
+    type = "VB0-1"
+    os_type = "Linux"
+    server_group = "A"
+    label = "my server"
+    system_storage = "iba01234567"
+    data_storage = ["ibb01234567", "ibg01234567"]
+    private_network = ["ivl01234567"]
+    enable_global_ip = true
 }
 ```
 
-### ```p2pub_additional_storage```
+#### ```p2pub_system_storage```: [System Storage](http://manual.iij.jp/p2/pub/b-3-1.html)
 
-[追加ストレージ](http://manual.iij.jp/p2/pub/b-3-1.html)
+| key | value | required |
+|-|-|-|
+|```type```| [Storage type (system storage)](http://manual.iij.jp/p2/pubapi/59949023.html) | o |
+|```label```| | |
+|```root_password```| root password in plain text | |
+|```root_ssh_key```| ssh public key for root user | |
+|```userdata```| Base64-encoded UserData string | |
+|```source_image```| set this when you create the storage by restoring from Storage Archive | |
+|```source_image.src_gis```| P2 service code source image is located in | |
+|```source_image.src_iar```| Storage Archive service code source image is located in | |
+|```source_image.image_id```| source image's id | |
 
-|項目|内容|値|必須|
-|-|-|-|-|
-|```type```|システムストレージ品目| http://manual.iij.jp/p2/pubapi/59949023.html |◯|
-|```label```|ラベル|任意の文字列||
+**Example**
 
 ```
-resource "p2pub_additional_storage" "as1" {
+resource "p2pub_system_storage" "system_storage" {
+    type = "S30GB_UBUNTU16_64"
+    label = "my system storage"
+    root_ssh_key = "${file("~/.ssh/id_rsa.pub")}"
+    userdata = "${base64encode(userdata)}"
+    source_image {
+        src_gis = "gis99999999"
+        src_iar = "iar99999999"
+        image_id = "999999"
+    }
+}
+```
+
+#### ```p2pub_additional_storage```: [Additional Storage](http://manual.iij.jp/p2/pub/b-3-2.html)
+
+| key | value | required |
+|-|-|-|
+|```type```| [Storage type (additional storage)](http://manual.iij.jp/p2/pubapi/59949023.html) | o |
+|```label```| | |
+
+**Example**
+
+```
+resource "p2pub_additional_storage" "additional_storage" {
     type = "B1000GB"
-    label = "as-label"
+    label = "my additional storage"
 }
 ```
 
-### ```p2pub_private_network```
+#### ```p2pub_private_network```: [Private Network/V](http://manual.iij.jp/p2/pub/b-5.html)
 
-[プライベートネットワーク/V](http://manual.iij.jp/p2/pub/b-5-1-1.html)
+| key | value | required |
+|-|-|-|
+|```label```| | |
 
-|項目|内容|値|必須|
-|-|-|-|-|
-|```label```|ラベル|任意の文字列||
+#### ```p2pub_storage_archive```: [Storage Archive](http://manual.iij.jp/p2/pub/b-4.html)
 
-```
-resource "p2pub_private_network" "net1" {
-    label = "pn-label"
-}
-```
+There are no attributes.
 
-### ```p2pub_storage_archive```
+#### ```p2pub_global_ip_address```: [Global IP Address/V](http://manual.iij.jp/p2/pub/b-5.html)
 
-[ストレージアーカイブ](http://manual.iij.jp/p2/pub/b-4.html)
+| key | value | required |
+|-|-|-|
+|```address_num```| amount of global ip addresses additionally allocate the contract (0~15) | |
 
-(設定項目なし)
+## Developing this provider
 
-```
-resource "p2pub_storage_archive" "sa1" {}
-```
+### Build from source
 
-
-### ```p2pub_global_ip_address```
-
-[グローバルIPアドレス](http://manual.iij.jp/p2/pub/b-5-1-2.html)
-
-|項目|内容|値|必須|
-|-|-|-|-|
-|```address_num```|IPアドレスの契約数|1~20までの整数|◯|
+[dep](https://github.com/golang/dep) is required.
 
 ```
-resource "p2pub_global_ip_address" "ip1" {
-    address_num = 10
-}
+$ make build
 ```
+
+
+## References
+
+- IIJ GIO P2 Public Resource API Reference : http://manual.iij.jp/p2/pubapi/index.html
+
+
+
+
+Author: Shoma Ishihara (sishihara@iij.ad.jp)
