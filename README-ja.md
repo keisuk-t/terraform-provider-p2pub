@@ -165,3 +165,81 @@ resource "p2pub_global_ip_address" "ip1" {
     address_num = 10
 }
 ```
+
+### ```p2pub_load_balancer```
+
+[FW+LB専有タイプ](http://manual.iij.jp/p2/pub/b-6-7.html)
+
+|項目|内容|値|必須|
+|-|-|-|-|
+|```type```|FW+LB 専有タイプ品目||◯|
+|```redundant```|冗長構成有無|"Yes" "No"|◯|
+|```external_type```|ネットワーク種別|"Global", "PrivateStandard"|◯|
+|```internal_type```|ネットワーク種別|"PrivateStandard"|◯|
+|```trafficip_list```|トラフィックIPの一覧|配列|◯|
+|```trafficip_list.ipv4_name```|トラフィックIPの名前|"文字列"|◯|
+|```filter_in_list```|ファイアウォールのルール一覧（IN）|配列||
+|```filter_in_list.source_network```|ソースネットワーク|"IPアドレス/マスク長" "ANY"||
+|```filter_in_list.destination_network```|デスティネーションネットワーク|"IPアドレス/マスク長" "ANY"||
+|```filter_in_list.destination_port```|デスティネーションポート番号|"数字" "ANY"||
+|```filter_in_list.protocol```|プロトコル|"TCP" "UDP"||
+|```filter_in_list.action```|ルールにマッチしたパケットに対する処理|"ACCEPT"（許可） "DROP"（破棄） "REJECT"（拒否）||
+|```filter_in_list.label```|ラベル|"文字列"||
+|```filter_out_list```|ファイアウォールのルール一覧（OUT）|配列||
+|```filter_out_list.source_network```|ソースネットワーク|"IPアドレス/マスク長" "ANY"||
+|```filter_out_list.destination_network```|デスティネーションネットワーク|"IPアドレス/マスク長" "ANY"||
+|```filter_out_list.destination_port```|デスティネーションポート番号|"数字" "ANY"||
+|```filter_out_list.protocol```|プロトコル|"TCP" "UDP"||
+|```filter_out_list.action```|ルールにマッチしたパケットに対する処理|"ACCEPT"（許可） "DROP"（破棄） "REJECT"（拒否）||
+|```filter_out_list.label```|ラベル|"文字列"||
+|```administration_server_allow_network_list```|管理画面へのアクセスを許可するIPアドレス|IPアドレスの配列||
+
+
+```
+resource "p2pub_load_balancer" "vtm1" {
+    type = "D10M"
+    redundant = "No"
+
+    external_type = "Global"
+    internal_type = "PrivateStandard"
+
+    trafficip_list = [
+        { ipv4_name = "TRAFFICIP1" }
+    ]
+
+    filter_in_list = [
+        {
+            source_network = "ANY"
+            destination_network = "ANY"
+            destination_port = "80"
+            protocol = "TCP"
+            action = "ACCEPT"
+            label = "ALLOW HTTP"
+        },
+        {
+            source_network = "ANY"
+            destination_network = "ANY"
+            destination_port = "443"
+            protocol = "TCP"
+            action = "ACCEPT"
+            label = "ALLOW HTTPS"
+        }
+    ]
+
+    filter_out_list = [
+        {
+            source_network = "ANY"
+            destination_network = "ANY"
+            destination_port = "ANY"
+            protocol = "TCP"
+            action = "ACCEPT"
+            label = "ALLOW ALL TCP"
+        }
+    ]
+    administration_server_allow_network_list = [
+        "192.0.2.0/24",
+        "198.51.100.0/24",
+        "203.0.113.0/24"
+    ]
+}
+```
