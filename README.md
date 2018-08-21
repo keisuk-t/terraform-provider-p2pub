@@ -40,8 +40,8 @@ Latest release: v0.3.0 (2018-07-02)
 
 ## Usage
 
-Before using this provider, you need to get an API key (available in [here](https://help.api.iij.jp/access_keys)).
-Note that this provider requires an authority can sign up IIJ services to create P2PUB resources. Make sure your account has a role of "Service Group Administrator". check it in [IIJ Service Online](https://help.iij.ad.jp/).
+Before using this provider, you need to get an API key (available at [here](https://help.api.iij.jp/access_keys)).
+Note that this provider requires an authority can sign up IIJ services to create P2PUB resources. Make sure your account has a role of "Service Group Administrator". check it at [IIJ Service Online](https://help.iij.ad.jp/).
 
 ### Example
 
@@ -118,6 +118,7 @@ resource "p2pub_virtual_server" "server" {
 |```root_password```| root password in plain text | |
 |```root_ssh_key```| ssh public key for root user | |
 |```userdata```| Base64-encoded UserData string | |
+|```encryption```| enable encryption. ```Yes``` / ```No``` | required in use of type-X storage. [detail](http://manual.iij.jp/p2/pubapi/59939812.html) |
 |```source_image```| set this when you create the storage by restoring from Storage Archive | |
 |```source_image.src_gis```| P2 service code source image is located in | |
 |```source_image.src_iar```| Storage Archive service code source image is located in | |
@@ -144,6 +145,7 @@ resource "p2pub_system_storage" "system_storage" {
 | key | value | required |
 |-|-|-|
 |```type```| [Storage type (additional storage)](http://manual.iij.jp/p2/pubapi/59949023.html) | o |
+|```encryption```| enable encryption. ```Yes``` / ```No``` | required in use of type-X storage. [detail](http://manual.iij.jp/p2/pubapi/59940088.html) |
 |```label```| | |
 
 **Example**
