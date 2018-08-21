@@ -80,6 +80,16 @@ func dataSourceAdditionalStorage() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"encryption": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"mode": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -165,6 +175,8 @@ func dataSourceAdditionalStorageRead(d *schema.ResourceData, m interface{}) erro
 	d.Set("storage_size", ans.StorageSize)
 	d.Set("storage_group", ans.StorageGroup)
 	d.Set("service_code", ans.ServiceCode)
+	d.Set("encryption", ans.Encryption)
+	d.Set("mode", ans.Mode)
 	
 	return nil
 }

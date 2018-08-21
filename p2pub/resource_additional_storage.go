@@ -48,6 +48,16 @@ func resourceAdditionalStorage() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"encryption": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"mode": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -93,6 +103,7 @@ func resourceAdditionalStorageCreate(d *schema.ResourceData, m interface{}) erro
 	args := protocol.StorageAdd{
 		GisServiceCode: gis,
 		Type: d.Get("type").(string),
+		Encryption: d.Get("encryption").(string),
 		StorageGroup: d.Get("storage_group").(string),
 	}
 	var res = protocol.StorageAddResponse{}
@@ -134,7 +145,9 @@ func resourceAdditionalStorageRead(d *schema.ResourceData, m interface{}) error 
 	d.Set("os_type", res.OSType)
 	d.Set("storage_size", res.StorageSize)
 	d.Set("label", res.Label)
-
+	d.Set("encryption", res.Encryption)
+	d.Set("mode", res.Mode)
+	
 	return nil
 }
 
