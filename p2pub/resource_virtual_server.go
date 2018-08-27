@@ -276,12 +276,19 @@ func releaseGlobalIP(api *p2pubapi.API, gis, ivm string) error {
 	return nil
 }
 
-func attachBootDevice(api *p2pubapi.API, gis, ivm, iba string) error {
+func attachBootDevice(api *p2pubapi.API, gis, ivm, system_storage string) error {
+
 	args := protocol.BootDeviceStorageConnect{
 		GisServiceCode: gis,
 		IvmServiceCode: ivm,
-		IbaServiceCode: iba,
 	}
+
+	if strings.HasPrefix(system_storage, "iba") {
+		args.IbaServiceCode = system_storage
+	} else if strings.HasPrefix(system_storage, "ica") {
+		args.IcaServiceCode = system_storage
+	}
+
 	var res = protocol.BootDeviceStorageConnectResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
@@ -307,27 +314,26 @@ func detachBootDevice(api *p2pubapi.API, gis, ivm string) error {
 	return nil
 }
 
-func attachDataDevice(api *p2pubapi.API, gis, ivm, ib string) error {
-	var args protocol.DataDeviceStorageConnect
-	if strings.HasPrefix(ib, "ibg") {
-		args = protocol.DataDeviceStorageConnect{
+func attachDataDevice(api *p2pubapi.API, gis, ivm, data_storage string) error {
+	args := protocol.DataDeviceStorageConnect{
 			GisServiceCode: gis,
 			IvmServiceCode: ivm,
-			IbgServiceCode: ib,
-		}
-	} else if strings.HasPrefix(ib, "ibb") {
-		args = protocol.DataDeviceStorageConnect{
-			GisServiceCode: gis,
-			IvmServiceCode: ivm,
-			IbbServiceCode: ib,
-		}
-	} else {
-		args = protocol.DataDeviceStorageConnect{
-			GisServiceCode: gis,
-			IvmServiceCode: ivm,
-			IbaServiceCode: ib,
-		}
 	}
+	
+	if strings.HasPrefix(data_storage, "ibg") {
+		args.IbgServiceCode = data_storage
+	} else if strings.HasPrefix(data_storage, "ibb") {
+		args.IbbServiceCode = data_storage
+	} else if strings.HasPrefix(data_storage, "iba") {
+		args.IbaServiceCode = data_storage
+	} else if strings.HasPrefix(data_storage, "icg") {
+		args.IcgServiceCode = data_storage
+	} else if strings.HasPrefix(data_storage, "icb") {
+		args.IcbServiceCode = data_storage
+	} else if strings.HasPrefix(data_storage, "ica") {
+		args.IcaServiceCode = data_storage
+	}
+	
 	var res = protocol.DataDeviceStorageConnectResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
@@ -430,7 +436,7 @@ func resourceVirtualServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	if d.Get("label") != nil && d.Get("label") != "" {
 		if err := setLabel(api, gis, ivm, d.Get("label").(string)); err != nil {
-			return err;
+			return err
 		}
 	}
 

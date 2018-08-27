@@ -49,6 +49,16 @@ func resourceSystemStorage() *schema.Resource {
 				Optional: true,
 				Computed: true,
 			},
+			"encryption": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+			"mode": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 
 			//
 			
@@ -246,6 +256,7 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 
 	args := protocol.SystemStorageAdd{
 		GisServiceCode: gis,
+		Encryption: d.Get("encryption").(string),
 		Type: d.Get("type").(string),
 		StorageGroup: d.Get("storage_group").(string),
 	}
@@ -294,7 +305,7 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	if d.Get("userdata") != nil {
+	if d.Get("userdata") != nil && d.Get("userdata").(string) != "" {
 		if err := setUserData(api, gis, iba, d.Get("userdata").(string)); err != nil {
 			return err
 		}
@@ -320,6 +331,8 @@ func resourceSystemStorageRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("os_type", res.OSType)
 	d.Set("storage_size", res.StorageSize)
 	d.Set("label", res.Label)
+	d.Set("encryption", res.Encryption)
+	d.Set("mode", res.Mode)
 
 	return nil
 }
