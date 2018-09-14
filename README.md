@@ -173,9 +173,7 @@ There are no attributes.
 |-|-|-|
 |```address_num```| amount of global ip addresses additionally allocate the contract (0~15) | |
 
-### ```p2pub_load_balancer```
-
-[FW+LB dedicated type](http://manual.iij.jp/p2/pub/b-6-7.html)
+#### ```p2pub_load_balancer```: [FW+LB dedicated type](http://manual.iij.jp/p2/pub/b-6-7.html)
 
 |key|value||required|
 |-|-|-|-|
