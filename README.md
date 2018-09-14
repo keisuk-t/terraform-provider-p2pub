@@ -120,8 +120,8 @@ resource "p2pub_virtual_server" "server" {
 |```userdata```| Base64-encoded UserData string | |
 |```encryption```| enable encryption. ```Yes``` / ```No``` | required in use of type-X storage. [detail](http://manual.iij.jp/p2/pubapi/59939812.html) |
 |```source_image```| set this when you create the storage by restoring from Storage Archive | |
-|```source_image.src_gis```| P2 service code source image is located in | |
-|```source_image.src_iar```| Storage Archive service code source image is located in | |
+|```source_image.gis_service_code```| P2 service code source image is located in | |
+|```source_image.iar_service_code```| Storage Archive service code source image is located in | |
 |```source_image.image_id```| source image's id | |
 
 **Example**
@@ -133,8 +133,8 @@ resource "p2pub_system_storage" "system_storage" {
     root_ssh_key = "${file("~/.ssh/id_rsa.pub")}"
     userdata = "${base64encode(userdata)}"
     source_image {
-        src_gis = "gis99999999"
-        src_iar = "iar99999999"
+        gis_service_code = "gis99999999"
+        iar_service_code = "iar99999999"
         image_id = "999999"
     }
 }
