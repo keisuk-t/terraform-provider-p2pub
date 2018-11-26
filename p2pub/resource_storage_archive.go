@@ -25,9 +25,8 @@ func resourceStorageArchive() *schema.Resource {
 
 		Schema: map[string]*schema.Schema{
 			"archive_size": &schema.Schema{
-				Type:     schema.TypeInt,
-				Optional: true,
-				Computed: true,
+				Type:     schema.TypeString,
+				Required: true,
 			},
 		},
 	}
@@ -40,6 +39,7 @@ func resourceStorageArchiveCreate(d *schema.ResourceData, m interface{}) error {
 
 	args := protocol.StorageArchiveAdd{
 		GisServiceCode: gis,
+		ArchiveSize: d.Get("archive_size").(string),
 	}
 	var res = protocol.StorageArchiveAddResponse{}
 
@@ -48,15 +48,54 @@ func resourceStorageArchiveCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	d.SetId(res.ServiceCode)
+	d.Set("archive_size", res.ArchiveSize)
 
 	return nil
 }
 
 func resourceStorageArchiveRead(d *schema.ResourceData, m interface{}) error {
+
+	api := m.(*Context).API
+	gis := m.(*Context).GisServiceCode
+
+	args := protocol.StorageArchiveGet{
+		GisServiceCode: gis,
+		IarServiceCode: d.Id(),
+	}
+	var res = protocol.StorageArchiveGetResponse{}
+
+	if err := p2pubapi.Call(*api, args, &res); err != nil {
+		return err
+	}
+
+	d.Set("archive_size", res.ArchiveSize)
+
 	return nil
 }
 
 func resourceStorageArchiveUpdate(d *schema.ResourceData, m interface {}) error {
+
+	api := m.(*Context).API
+	gis := m.(*Context).GisServiceCode
+
+	d.Partial(true)
+
+	if d.HasChange("archive_size") {
+		args := protocol.StorageArchiveSizeChange{
+			GisServiceCode: gis,
+			IarServiceCode: d.Id(),
+			ArchiveSize: d.Get("archive_size").(string),
+		}
+		var res = protocol.StorageArchiveSizeChangeResponse{}
+
+		if err := p2pubapi.Call(*api, args, &res); err != nil {
+			return err
+		}
+		d.SetPartial("archive_size")
+	}
+
+	d.Partial(false)
+
 	return nil
 }
 
