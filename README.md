@@ -6,11 +6,11 @@ Terraform custom provider for [IIJ GIO P2 Public Resource](https://www.iij.ad.jp
 
 ## Download
 
-Latest release: v0.4.0 (2018-08-27)
+Latest release: v0.4.1 (2018-11-26)
 
-- **Linux**: [terraform-provider-p2pub-linux-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.0/terraform-provider-p2pub-linux-amd64)
-- **Windows**: [terraform-provider-p2pub-windows-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.0/terraform-provider-p2pub-windows-amd64)
-- **MacOS**: [terraform-provider-p2pub-darwin-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.0/terraform-provider-p2pub-darwin-amd64)
+- **Linux**: [terraform-provider-p2pub-linux-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.1/terraform-provider-p2pub-linux-amd64)
+- **Windows**: [terraform-provider-p2pub-windows-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.1/terraform-provider-p2pub-windows-amd64)
+- **MacOS**: [terraform-provider-p2pub-darwin-amd64](https://github.com/iij/terraform-provider-p2pub/releases/download/v0.4.1/terraform-provider-p2pub-darwin-amd64)
 
 ## Installation
 
@@ -165,7 +165,9 @@ resource "p2pub_additional_storage" "additional_storage" {
 
 #### ```p2pub_storage_archive```: [Storage Archive](http://manual.iij.jp/p2/pub/b-4.html)
 
-There are no attributes.
+| key | value | required |
+|-|-|-|
+|```archive_size```| capacity for archived images in GB. Need to set multiple of 10. | o |
 
 #### ```p2pub_global_ip_address```: [Global IP Address/V](http://manual.iij.jp/p2/pub/b-5.html)
 
