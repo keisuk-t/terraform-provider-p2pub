@@ -145,7 +145,10 @@ resource "p2pub_private_network" "net1" {
 
 [ストレージアーカイブ](http://manual.iij.jp/p2/pub/b-4.html)
 
-(設定項目なし)
+
+|項目|内容|値|必須|
+|-|-|-|-|
+|```archive_size```| アーカイブの容量 | 10〜100 (10GB単位) | ○ |
 
 ```
 resource "p2pub_storage_archive" "sa1" {}
