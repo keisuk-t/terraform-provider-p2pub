@@ -1,8 +1,9 @@
 package p2pub
 
 import (
+	"strings"
 	"time"
-	
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/iij/p2pubapi"
 	"github.com/iij/p2pubapi/protocol"
@@ -16,7 +17,7 @@ func resourceAdditionalStorage() *schema.Resource {
 		Delete: resourceAdditionalStorageDelete,
 
 		Timeouts: &schema.ResourceTimeout{
-   		        Default: schema.DefaultTimeout(5 * time.Minute),
+			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 
 		Importer: &schema.ResourceImporter{
@@ -82,13 +83,21 @@ func setAdditionalStorageLabel(api *p2pubapi.API, gis, ib, label string) error {
 	args := protocol.StorageLabelSet{
 		GisServiceCode: gis,
 		IbgServiceCode: ib,
-		Name: label,
+		Name:           label,
 	}
 	var res = protocol.StorageLabelSetResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
 	}
 	return nil
+}
+
+func isExtendedAdditionalStorage(stype string) bool {
+	if strings.Index(stype, "BX") == 0 || strings.Index(stype, "GX") == 0 {
+		return true
+	}
+
+	return false
 }
 
 //
@@ -102,10 +111,18 @@ func resourceAdditionalStorageCreate(d *schema.ResourceData, m interface{}) erro
 
 	args := protocol.StorageAdd{
 		GisServiceCode: gis,
-		Type: d.Get("type").(string),
-		Encryption: d.Get("encryption").(string),
-		StorageGroup: d.Get("storage_group").(string),
+		Type:           d.Get("type").(string),
+		StorageGroup:   d.Get("storage_group").(string),
 	}
+
+	if isExtendedAdditionalStorage(d.Get("type").(string)) {
+		if d.Get("encryption") != nil && d.Get("encryption").(string) != "" {
+			args.Encryption = d.Get("encryption").(string)
+		} else {
+			args.Encryption = "No"
+		}
+	}
+
 	var res = protocol.StorageAddResponse{}
 
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -139,19 +156,22 @@ func resourceAdditionalStorageRead(d *schema.ResourceData, m interface{}) error 
 	if err != nil {
 		return err
 	}
-	
+
 	d.Set("type", res.Type)
 	d.Set("storage_group", res.StorageGroup)
 	d.Set("os_type", res.OSType)
 	d.Set("storage_size", res.StorageSize)
 	d.Set("label", res.Label)
-	d.Set("encryption", res.Encryption)
 	d.Set("mode", res.Mode)
-	
+
+	if isExtendedAdditionalStorage(res.Type) {
+		d.Set("encryption", res.Encryption)
+	}
+
 	return nil
 }
 
-func resourceAdditionalStorageUpdate(d *schema.ResourceData, m interface {}) error {
+func resourceAdditionalStorageUpdate(d *schema.ResourceData, m interface{}) error {
 
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
@@ -166,11 +186,11 @@ func resourceAdditionalStorageUpdate(d *schema.ResourceData, m interface {}) err
 	}
 
 	d.Partial(false)
-	
+
 	return nil
 }
 
-func resourceAdditionalStorageDelete(d *schema.ResourceData, m interface {}) error {
+func resourceAdditionalStorageDelete(d *schema.ResourceData, m interface{}) error {
 
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
@@ -191,6 +211,6 @@ func resourceAdditionalStorageDelete(d *schema.ResourceData, m interface {}) err
 	}
 
 	d.SetId("")
-	
+
 	return nil
 }
