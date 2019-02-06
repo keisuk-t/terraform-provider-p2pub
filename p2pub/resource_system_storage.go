@@ -3,6 +3,7 @@ package p2pub
 import (
 	"time"
 	"errors"
+    "strings"
 	
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/iij/p2pubapi"
@@ -245,6 +246,14 @@ func copyImage(api *p2pubapi.API, src_gis, src_iar, src_id, dst_gis, dst_iar str
 	return res.IarServiceCode, res.ImageId, nil
 }
 
+func isExtendedSystemStorage(stype string) bool {
+        if strings.Index(stype, "SX") == 0 {
+                return true
+        }
+
+        return false
+}
+
 //
 // reosurce operations
 //
@@ -256,10 +265,18 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 
 	args := protocol.SystemStorageAdd{
 		GisServiceCode: gis,
-		Encryption: d.Get("encryption").(string),
 		Type: d.Get("type").(string),
 		StorageGroup: d.Get("storage_group").(string),
 	}
+
+    if isExtendedSystemStorage(d.Get("type").(string)) {
+        if d.Get("encryption") != nil && d.Get("encryption").(string) != "" {
+            args.Encryption = d.Get("encryption").(string)
+        } else {
+            args.Encryption = "No"
+        }
+    }
+
 	var res = protocol.SystemStorageAddResponse{}
 
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -331,8 +348,11 @@ func resourceSystemStorageRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("os_type", res.OSType)
 	d.Set("storage_size", res.StorageSize)
 	d.Set("label", res.Label)
-	d.Set("encryption", res.Encryption)
 	d.Set("mode", res.Mode)
+
+    if isExtendedSystemStorage(res.Type) {
+        d.Set("encryption", res.Encryption)
+    }
 
 	return nil
 }

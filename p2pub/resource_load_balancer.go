@@ -42,6 +42,11 @@ func resourceLoadBalancer() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"password": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("VTM_PASSWORD", ""),
+			},
 			"label": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
@@ -289,6 +294,22 @@ func waitLoadBalancer(api *p2pubapi.API, gis, ifl string, cstatus, rstatus p2pub
 			return fmt.Errorf("timeout")
 		}
 		time.Sleep(pollInterval)
+	}
+
+	return nil
+}
+
+func setLoadBalancerPassword(api *p2pubapi.API, gis, ifl, password string) error {
+	args := protocol.LBControlPanelAccountPasswordSet{
+		GisServiceCode: gis,
+		IflServiceCode: ifl,
+		AccountName:    "customer",
+		Password:       password,
+	}
+	res := protocol.LBControlPanelACLSetResponse{}
+
+	if err := p2pubapi.Call(*api, args, &res); err != nil {
+		return err
 	}
 
 	return nil
@@ -571,6 +592,12 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
+	if d.Get("password") != nil && d.Get("password").(string) != "" {
+		if err := setLoadBalancerPassword(api, gis, servicecode, d.Get("password").(string)); err != nil {
+			return err
+		}
+	}
+
 	d.SetId(servicecode)
 
 	if d.Get("filter_out_list") != nil {
@@ -627,6 +654,13 @@ func resourceLoadBalancerUpdate(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 		d.SetPartial("label")
+	}
+
+	if d.HasChange("password") {
+		if err := setLoadBalancerPassword(api, gis, d.Id(), d.Get("password").(string)); err != nil {
+			return err
+		}
+		d.SetPartial("password")
 	}
 
 	if d.HasChange("trafficip_list") {
