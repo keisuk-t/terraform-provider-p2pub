@@ -69,8 +69,8 @@ func resourceAdditionalStorage() *schema.Resource {
 
 func getAdditionalStorageInfo(api *p2pubapi.API, gis, ib string) (*protocol.StorageGetResponse, error) {
 	args := protocol.StorageGet{
-		GisServiceCode: gis,
-		IbgServiceCode: ib,
+		GisServiceCode:     gis,
+		StorageServiceCode: ib,
 	}
 	var res = protocol.StorageGetResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -81,9 +81,9 @@ func getAdditionalStorageInfo(api *p2pubapi.API, gis, ib string) (*protocol.Stor
 
 func setAdditionalStorageLabel(api *p2pubapi.API, gis, ib, label string) error {
 	args := protocol.StorageLabelSet{
-		GisServiceCode: gis,
-		IbgServiceCode: ib,
-		Name:           label,
+		GisServiceCode:     gis,
+		StorageServiceCode: ib,
+		Name:               label,
 	}
 	var res = protocol.StorageLabelSetResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -201,8 +201,8 @@ func resourceAdditionalStorageDelete(d *schema.ResourceData, m interface{}) erro
 	}
 
 	args := protocol.StorageCancel{
-		GisServiceCode: gis,
-		IbgServiceCode: d.Id(),
+		GisServiceCode:     gis,
+		StorageServiceCode: d.Id(),
 	}
 	var res = protocol.StorageCancelResponse{}
 
