@@ -592,7 +592,7 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 		if err := p2pubapi.Call(*api, type_args, &type_res); err != nil {
 			return err
 		}
-		if err := p2pubapi.WaitVM(api, gis, d.Id(), p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+		if err := p2pubapi.WaitVM(api, gis, d.Id(), p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 			return err
 		}
 		d.SetPartial("type")
