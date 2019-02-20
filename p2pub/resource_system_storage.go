@@ -1,10 +1,10 @@
 package p2pub
 
 import (
-	"time"
 	"errors"
-    "strings"
-	
+	"strings"
+	"time"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/iij/p2pubapi"
 	"github.com/iij/p2pubapi/protocol"
@@ -18,7 +18,7 @@ func resourceSystemStorage() *schema.Resource {
 		Delete: resourceSystemStorageDelete,
 
 		Timeouts: &schema.ResourceTimeout{
-		        Default: schema.DefaultTimeout(5 * time.Minute),
+			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 
 		Importer: &schema.ResourceImporter{
@@ -62,7 +62,7 @@ func resourceSystemStorage() *schema.Resource {
 			},
 
 			//
-			
+
 			"root_ssh_key": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
@@ -76,25 +76,25 @@ func resourceSystemStorage() *schema.Resource {
 				Optional: true,
 			},
 			"source_image": &schema.Schema{
-				Type:     schema.TypeMap,
-				Elem:     &schema.Resource{
+				Type: schema.TypeMap,
+				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"gis_service_code": &schema.Schema{
-							Type: schema.TypeString,
+							Type:     schema.TypeString,
 							Required: true,
 						},
 						"iar_service_code": &schema.Schema{
-							Type: schema.TypeString,
+							Type:     schema.TypeString,
 							Required: true,
 						},
 						"image_id": &schema.Schema{
-							Type: schema.TypeString,
+							Type:     schema.TypeString,
 							Required: true,
 						},
 					},
 				},
 				Optional: true,
-			},			
+			},
 		},
 	}
 }
@@ -105,8 +105,8 @@ func resourceSystemStorage() *schema.Resource {
 
 func getSystemStorageInfo(api *p2pubapi.API, gis, iba string) (*protocol.SystemStorageGetResponse, error) {
 	args := protocol.SystemStorageGet{
-		GisServiceCode: gis,
-		IbaServiceCode: iba,
+		GisServiceCode:     gis,
+		StorageServiceCode: iba,
 	}
 	var res = protocol.SystemStorageGetResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -117,9 +117,9 @@ func getSystemStorageInfo(api *p2pubapi.API, gis, iba string) (*protocol.SystemS
 
 func setSystemStorageLabel(api *p2pubapi.API, gis, iba, label string) error {
 	args := protocol.SystemStorageLabelSet{
-		GisServiceCode: gis,
-		IbaServiceCode: iba,
-		Name: label,
+		GisServiceCode:     gis,
+		StorageServiceCode: iba,
+		Name:               label,
 	}
 	var res = protocol.SystemStorageLabelSetResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -138,9 +138,9 @@ func setSSHKey(api *p2pubapi.API, gis, iba, key string) error {
 		attachStatus = p2pubapi.Attached
 	}
 	args := protocol.PublicKeyAdd{
-		GisServiceCode: gis,
-		IbaServiceCode: iba,
-		PublicKey: key,
+		GisServiceCode:     gis,
+		StorageServiceCode: iba,
+		PublicKey:          key,
 	}
 	var res = protocol.PublicKeyAddResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -163,9 +163,9 @@ func setPassword(api *p2pubapi.API, gis, iba, password string) error {
 		attachStatus = p2pubapi.Attached
 	}
 	args := protocol.PasswordSet{
-		GisServiceCode: gis,
-		IbaServiceCode: iba,
-		Password: password,
+		GisServiceCode:     gis,
+		StorageServiceCode: iba,
+		Password:           password,
 	}
 	var res = protocol.PasswordSetResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -188,9 +188,9 @@ func setUserData(api *p2pubapi.API, gis, iba, userdata string) error {
 		attachStatus = p2pubapi.Attached
 	}
 	args := protocol.UserDataSet{
-		GisServiceCode: gis,
-		IbaServiceCode: iba,
-		UserData: userdata,
+		GisServiceCode:     gis,
+		StorageServiceCode: iba,
+		UserData:           userdata,
 	}
 	var res = protocol.UserDataSetResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -198,8 +198,8 @@ func setUserData(api *p2pubapi.API, gis, iba, userdata string) error {
 	}
 	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
 		p2pubapi.InService, attachStatus, TIMEOUT); err != nil {
-			return err
-		}
+		return err
+	}
 	return nil
 }
 
@@ -213,11 +213,11 @@ func restore(api *p2pubapi.API, gis, iba, iar, id string) error {
 		attachStatus = p2pubapi.Attached
 	}
 	args := protocol.Restore{
-		GisServiceCode: gis,
-		IbaServiceCode: iba,
-		IarServiceCode: iar,
-		Image: "Archive",
-		ImageId: id,
+		GisServiceCode:     gis,
+		StorageServiceCode: iba,
+		IarServiceCode:     iar,
+		Image:              "Archive",
+		ImageId:            id,
 	}
 	var res = protocol.RestoreResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -234,10 +234,10 @@ func copyImage(api *p2pubapi.API, src_gis, src_iar, src_id, dst_gis, dst_iar str
 	args := protocol.StorageImageCopy{
 		SrcGisServiceCode: src_gis,
 		SrcIarServiceCode: src_iar,
-		SrcImageId: src_id,
+		SrcImageId:        src_id,
 		DstGisServiceCode: dst_gis,
 		DstIarServiceCode: dst_iar,
-		Image: "Copy",
+		Image:             "Copy",
 	}
 	var res = protocol.StorageImageCopyResponse{}
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
@@ -247,11 +247,11 @@ func copyImage(api *p2pubapi.API, src_gis, src_iar, src_id, dst_gis, dst_iar str
 }
 
 func isExtendedSystemStorage(stype string) bool {
-        if strings.Index(stype, "SX") == 0 {
-                return true
-        }
+	if strings.Index(stype, "SX") == 0 {
+		return true
+	}
 
-        return false
+	return false
 }
 
 //
@@ -265,17 +265,17 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 
 	args := protocol.SystemStorageAdd{
 		GisServiceCode: gis,
-		Type: d.Get("type").(string),
-		StorageGroup: d.Get("storage_group").(string),
+		Type:           d.Get("type").(string),
+		StorageGroup:   d.Get("storage_group").(string),
 	}
 
-    if isExtendedSystemStorage(d.Get("type").(string)) {
-        if d.Get("encryption") != nil && d.Get("encryption").(string) != "" {
-            args.Encryption = d.Get("encryption").(string)
-        } else {
-            args.Encryption = "No"
-        }
-    }
+	if isExtendedSystemStorage(d.Get("type").(string)) {
+		if d.Get("encryption") != nil && d.Get("encryption").(string) != "" {
+			args.Encryption = d.Get("encryption").(string)
+		} else {
+			args.Encryption = "No"
+		}
+	}
 
 	var res = protocol.SystemStorageAddResponse{}
 
@@ -290,7 +290,6 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-
 	if d.Get("source_image") != nil && len(d.Get("source_image").(map[string]interface{})) != 0 {
 		src_gis := d.Get("source_image.gis_service_code").(string)
 		src_iar := d.Get("source_image.iar_service_code").(string)
@@ -302,7 +301,6 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 			return err
 		}
 	}
-	
 
 	if d.Get("label") != nil && d.Get("label").(string) != "" {
 		if err := setSystemStorageLabel(api, gis, iba, d.Get("label").(string)); err != nil {
@@ -326,7 +324,7 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 		if err := setUserData(api, gis, iba, d.Get("userdata").(string)); err != nil {
 			return err
 		}
-	}  	
+	}
 
 	d.SetId(iba)
 
@@ -350,14 +348,14 @@ func resourceSystemStorageRead(d *schema.ResourceData, m interface{}) error {
 	d.Set("label", res.Label)
 	d.Set("mode", res.Mode)
 
-    if isExtendedSystemStorage(res.Type) {
-        d.Set("encryption", res.Encryption)
-    }
+	if isExtendedSystemStorage(res.Type) {
+		d.Set("encryption", res.Encryption)
+	}
 
 	return nil
 }
 
-func resourceSystemStorageUpdate(d *schema.ResourceData, m interface {}) error {
+func resourceSystemStorageUpdate(d *schema.ResourceData, m interface{}) error {
 
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
@@ -369,7 +367,7 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface {}) error {
 	d.Partial(true)
 
 	info, err := getSystemStorageInfo(api, gis, d.Id())
-	// TODO: 
+	// TODO:
 	if err != nil {
 		return err
 	}
@@ -419,7 +417,7 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface {}) error {
 			return err
 		}
 		d.SetPartial("userdata")
-	}	
+	}
 
 	d.Partial(false)
 
@@ -428,11 +426,11 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface {}) error {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
-func resourceSystemStorageDelete(d *schema.ResourceData, m interface {}) error {
+func resourceSystemStorageDelete(d *schema.ResourceData, m interface{}) error {
 
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
@@ -443,8 +441,8 @@ func resourceSystemStorageDelete(d *schema.ResourceData, m interface {}) error {
 	}
 
 	args := protocol.SystemStorageCancel{
-		GisServiceCode: gis,
-		IbaServiceCode: d.Id(),
+		GisServiceCode:     gis,
+		StorageServiceCode: d.Id(),
 	}
 	var res = protocol.SystemStorageCancel{}
 
