@@ -18,6 +18,8 @@ func resourceVirtualServer() *schema.Resource {
 		Delete: resourceVirtualServerDelete,
 
 		Timeouts: &schema.ResourceTimeout{
+			Create:  schema.DefaultTimeout(5 * time.Minute),
+			Update:  schema.DefaultTimeout(5 * time.Minute),
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 
@@ -217,7 +219,7 @@ func getVMInfo(api *p2pubapi.API, gis, ivm string) (*protocol.VMGetResponse, err
 	return &res, nil
 }
 
-func power(api *p2pubapi.API, gis, ivm, onoff string) error {
+func power(api *p2pubapi.API, gis, ivm, onoff string, timeout time.Duration) error {
 	if info, err := getVMInfo(api, gis, ivm); err != nil {
 		return err
 	} else {
@@ -240,13 +242,13 @@ func power(api *p2pubapi.API, gis, ivm, onoff string) error {
 		state = p2pubapi.Stopped
 	}
 	// should i use terrafrom helper function ?
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, state, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, state, timeout); err != nil {
 		return err;
 	}
 	return nil
 }
 
-func allocateGlobalIP(api *p2pubapi.API, gis, ivm string) (string, error) {
+func allocateGlobalIP(api *p2pubapi.API, gis, ivm string, timeout time.Duration) (string, error) {
 	args := protocol.GlobalAddressAllocate{
 		GisServiceCode: gis,
 		IvmServiceCode: ivm,
@@ -255,13 +257,13 @@ func allocateGlobalIP(api *p2pubapi.API, gis, ivm string) (string, error) {
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return "", err
 	}
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return "", err
 	}
 	return res.IPv4.IpAddress, nil
 }
 
-func releaseGlobalIP(api *p2pubapi.API, gis, ivm string) error {
+func releaseGlobalIP(api *p2pubapi.API, gis, ivm string, timeout time.Duration) error {
 	args := protocol.GlobalAddressRelease{
 		GisServiceCode: gis,
 		IvmServiceCode: ivm,
@@ -270,13 +272,13 @@ func releaseGlobalIP(api *p2pubapi.API, gis, ivm string) error {
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
 	}
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return err
 	}
 	return nil
 }
 
-func attachBootDevice(api *p2pubapi.API, gis, ivm, system_storage string) error {
+func attachBootDevice(api *p2pubapi.API, gis, ivm, system_storage string, timeout time.Duration) error {
 
 	args := protocol.BootDeviceStorageConnect{
 		GisServiceCode: gis,
@@ -293,13 +295,13 @@ func attachBootDevice(api *p2pubapi.API, gis, ivm, system_storage string) error 
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
 	}
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return err;
 	}
 	return nil
 }
 
-func detachBootDevice(api *p2pubapi.API, gis, ivm string) error {
+func detachBootDevice(api *p2pubapi.API, gis, ivm string, timeout time.Duration) error {
 	args := protocol.BootDeviceStorageDisconnect{
 		GisServiceCode: gis,
 		IvmServiceCode: ivm,
@@ -308,13 +310,13 @@ func detachBootDevice(api *p2pubapi.API, gis, ivm string) error {
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
 	}
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return err
 	}
 	return nil
 }
 
-func attachDataDevice(api *p2pubapi.API, gis, ivm, data_storage string) error {
+func attachDataDevice(api *p2pubapi.API, gis, ivm, data_storage string, timeout time.Duration) error {
 	args := protocol.DataDeviceStorageConnect{
 			GisServiceCode: gis,
 			IvmServiceCode: ivm,
@@ -338,13 +340,13 @@ func attachDataDevice(api *p2pubapi.API, gis, ivm, data_storage string) error {
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
 	}
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return err
 	}
 	return nil
 }
 
-func detachDataDevice(api *p2pubapi.API, gis, ivm, pci string) error {
+func detachDataDevice(api *p2pubapi.API, gis, ivm, pci string, timeout time.Duration) error {
 	args := protocol.DataDeviceStorageDisconnect{
 		GisServiceCode: gis,
 		IvmServiceCode: ivm,
@@ -354,13 +356,13 @@ func detachDataDevice(api *p2pubapi.API, gis, ivm, pci string) error {
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
 	}
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return err
 	}
 	return nil
 }
 
-func attachPrivateNetowrk(api *p2pubapi.API, gis, ivm, ivl string) error {
+func attachPrivateNetowrk(api *p2pubapi.API, gis, ivm, ivl string, timeout time.Duration) error {
 	args := protocol.PrivateNetworkConnect{
 		GisServiceCode: gis,
 		IvlServiceCode: ivl,
@@ -370,13 +372,13 @@ func attachPrivateNetowrk(api *p2pubapi.API, gis, ivm, ivl string) error {
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
 	}
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return err
 	}
 	return nil
 }
 
-func detachPrivateNetwork(api *p2pubapi.API, gis, ivm, mac string) error {
+func detachPrivateNetwork(api *p2pubapi.API, gis, ivm, mac string, timeout time.Duration) error {
 	args := protocol.PrivateNetworkDisconnect{
 		GisServiceCode: gis,
 		MacAddress: mac,
@@ -386,7 +388,7 @@ func detachPrivateNetwork(api *p2pubapi.API, gis, ivm, mac string) error {
 	if err := p2pubapi.Call(*api, args, &res); err != nil {
 		return err
 	}
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return err
 	}
 	return nil
@@ -413,6 +415,7 @@ func resourceVirtualServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	log.Printf("[DEBUG] p2pub: create virtual server resource on %s", gis)
 
@@ -430,7 +433,7 @@ func resourceVirtualServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	ivm := res.ServiceCode
 
-	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+	if err := p2pubapi.WaitVM(api, gis, ivm, p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 		return err;
 	}
 
@@ -441,14 +444,14 @@ func resourceVirtualServerCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if d.Get("system_storage") != nil && d.Get("system_storage") != "" {
-		if err := attachBootDevice(api, gis, ivm, d.Get("system_storage").(string)); err != nil {
+		if err := attachBootDevice(api, gis, ivm, d.Get("system_storage").(string), timeout); err != nil {
 			return err
 		}
 	}
 
 	if d.Get("data_storage") != nil {
 		for _, ibg := range d.Get("data_storage").(*schema.Set).List() {
-			if err := attachDataDevice(api, gis, ivm, ibg.(string)); err != nil {
+			if err := attachDataDevice(api, gis, ivm, ibg.(string), timeout); err != nil {
 				return err
 			}
 		}
@@ -456,14 +459,14 @@ func resourceVirtualServerCreate(d *schema.ResourceData, m interface{}) error {
 
 	if d.Get("private_network") != nil {
 		for _, ivl := range d.Get("private_network").(*schema.Set).List() {
-			if err := attachPrivateNetowrk(api, gis, ivm, ivl.(string)); err != nil {
+			if err := attachPrivateNetowrk(api, gis, ivm, ivl.(string), timeout); err != nil {
 				return err
 			}
 		}
 	}
 
 	if d.Get("enable_global_ip") != nil && d.Get("enable_global_ip").(bool) {
-		global_ip, err := allocateGlobalIP(api, gis, ivm);
+		global_ip, err := allocateGlobalIP(api, gis, ivm, timeout);
 		if err != nil {
 			return err
 		}
@@ -486,7 +489,7 @@ func resourceVirtualServerCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if bootable(d) {
-		if err := power(api, gis, ivm, "On"); err != nil {
+		if err := power(api, gis, ivm, "On", timeout); err != nil {
 			return err;
 		}
 	}
@@ -559,6 +562,7 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
+	timeout := d.Timeout(schema.TimeoutUpdate)
 
 	d.Partial(true)
 
@@ -574,7 +578,7 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 	if d.HasChange("type") {
 		log.Printf("[DEBUG] p2pub: %s - change VM type to %s", d.Id(), d.Get("type"))
 		if !stopped {
-			if err := power(api, gis, d.Id(), "Off"); err != nil {
+			if err := power(api, gis, d.Id(), "Off", timeout); err != nil {
 				return err;
 			}
 			stopped = true
@@ -588,7 +592,7 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 		if err := p2pubapi.Call(*api, type_args, &type_res); err != nil {
 			return err
 		}
-		if err := p2pubapi.WaitVM(api, gis, d.Id(), p2pubapi.InService, p2pubapi.Stopped, TIMEOUT); err != nil {
+		if err := p2pubapi.WaitVM(api, gis, d.Id(), p2pubapi.InService, p2pubapi.Stopped, timeout); err != nil {
 			return err
 		}
 		d.SetPartial("type")
@@ -597,16 +601,16 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 	if d.HasChange("system_storage") {
 		log.Printf("[DEBUG] p2pub: %s - change boot device %s", d.Id(), d.Get("system_storage"))
 		if !stopped {
-			if err := power(api, gis, d.Id(), "Off"); err != nil {
+			if err := power(api, gis, d.Id(), "Off", timeout); err != nil {
 				return err
 			}
 			stopped = true
 		}
-		if err := detachBootDevice(api, gis, d.Id()); err != nil {
+		if err := detachBootDevice(api, gis, d.Id(), timeout); err != nil {
 			return err
 		}
 		if d.Get("system_storage") != nil && d.Get("system_storage") != "" {
-			if err := attachBootDevice(api, gis, d.Id(), d.Get("system_storage").(string)); err != nil {
+			if err := attachBootDevice(api, gis, d.Id(), d.Get("system_storage").(string), timeout); err != nil {
 				return err
 			}
 		}
@@ -616,12 +620,12 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 	if d.HasChange("data_storage") {
 		log.Printf("[DEBUG] p2pub: %s - change data device %s", d.Id(), d.Get("data_storage"))
 		if !stopped {
-			if err := power(api, gis, d.Id(), "Off"); err != nil {
+			if err := power(api, gis, d.Id(), "Off", timeout); err != nil {
 				return err
 			}
 			stopped = true
 		}
-		if err := power(api, gis, d.Id(), "Off"); err != nil {
+		if err := power(api, gis, d.Id(), "Off", timeout); err != nil {
 			return err
 		}
 		for _, elm := range d.Get("storage_list").([]interface{}) {
@@ -630,13 +634,13 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 			if boot == "Yes" {
 				continue;
 			}
-			if err := detachDataDevice(api, gis, d.Id(), pci_slot); err != nil {
+			if err := detachDataDevice(api, gis, d.Id(), pci_slot, timeout); err != nil {
 				return err
 			}
 			log.Printf("[DEBUG] detach data device %v", pci_slot)
 		}
 		for _, ibg := range d.Get("data_storage").(*schema.Set).List() {
-			if err := attachDataDevice(api, gis, d.Id(), ibg.(string)); err != nil {
+			if err := attachDataDevice(api, gis, d.Id(), ibg.(string), timeout); err != nil {
 				return err
 			}
 		}
@@ -646,7 +650,7 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 	if d.HasChange("private_network") {
 		log.Printf("[DEBUG] p2pub: %s - change private network %s", d.Id(), d.Get("private_network"))
 		if !stopped {
-			if err := power(api, gis, d.Id(), "Off"); err != nil {
+			if err := power(api, gis, d.Id(), "Off", timeout); err != nil {
 				return err
 			}
 			stopped = true
@@ -655,13 +659,13 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 			t := elm.(map[string]interface{})["network_type"].(string)
 			mac_address := elm.(map[string]interface{})["mac_address"].(string)
 			if t == "Private" {
-				if err := detachPrivateNetwork(api, gis, d.Id(), mac_address); err != nil {
+				if err := detachPrivateNetwork(api, gis, d.Id(), mac_address, timeout); err != nil {
 					return err
 				}
 			}
 		}
 		for _, ivl := range d.Get("private_network").(*schema.Set).List() {
-			if err := attachPrivateNetowrk(api, gis, d.Id(), ivl.(string)); err != nil {
+			if err := attachPrivateNetowrk(api, gis, d.Id(), ivl.(string), timeout); err != nil {
 				return err
 			}
 		}
@@ -671,17 +675,17 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 	if d.HasChange("enable_global_ip") {
 		log.Printf("[DEBUG] p2pub: %s - change global ip address assignment %s", d.Id(), d.Get("enable_global_ip"))
 		if !stopped {
-			if err := power(api, gis, d.Id(), "Off"); err != nil {
+			if err := power(api, gis, d.Id(), "Off", timeout); err != nil {
 				return err
 			}
 			stopped = true
 		}
 		if d.Get("enable_global_ip") != nil && d.Get("enable_global_ip").(bool) {
-			if _, err := allocateGlobalIP(api, gis, d.Id()); err != nil {
+			if _, err := allocateGlobalIP(api, gis, d.Id(), timeout); err != nil {
 				return err
 			}
 		} else {
-			if err := releaseGlobalIP(api, gis, d.Id()); err != nil {
+			if err := releaseGlobalIP(api, gis, d.Id(), timeout); err != nil {
 				return err
 			}
 		}
@@ -691,7 +695,7 @@ func resourceVirtualServerUpdate(d *schema.ResourceData, m interface {}) error {
 	d.Partial(false)
 
 	if stopped && bootable(d) {
-		if err := power(api, gis, d.Id(), "On"); err != nil {
+		if err := power(api, gis, d.Id(), "On", timeout); err != nil {
 			return err;
 		}
 	}

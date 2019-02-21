@@ -18,6 +18,8 @@ func resourceSystemStorage() *schema.Resource {
 		Delete: resourceSystemStorageDelete,
 
 		Timeouts: &schema.ResourceTimeout{
+			Create:  schema.DefaultTimeout(5 * time.Minute),
+			Update:  schema.DefaultTimeout(5 * time.Minute),
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 
@@ -128,7 +130,7 @@ func setSystemStorageLabel(api *p2pubapi.API, gis, iba, label string) error {
 	return nil
 }
 
-func setSSHKey(api *p2pubapi.API, gis, iba, key string) error {
+func setSSHKey(api *p2pubapi.API, gis, iba, key string, timeout time.Duration) error {
 	info, err := getSystemStorageInfo(api, gis, iba)
 	if err != nil {
 		return err
@@ -147,13 +149,13 @@ func setSSHKey(api *p2pubapi.API, gis, iba, key string) error {
 		return err
 	}
 	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
-		p2pubapi.InService, attachStatus, TIMEOUT); err != nil {
+		p2pubapi.InService, attachStatus, timeout); err != nil {
 		return err
 	}
 	return nil
 }
 
-func setPassword(api *p2pubapi.API, gis, iba, password string) error {
+func setPassword(api *p2pubapi.API, gis, iba, password string, timeout time.Duration) error {
 	info, err := getSystemStorageInfo(api, gis, iba)
 	if err != nil {
 		return err
@@ -172,13 +174,13 @@ func setPassword(api *p2pubapi.API, gis, iba, password string) error {
 		return err
 	}
 	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
-		p2pubapi.InService, attachStatus, TIMEOUT); err != nil {
+		p2pubapi.InService, attachStatus, timeout); err != nil {
 		return err
 	}
 	return nil
 }
 
-func setUserData(api *p2pubapi.API, gis, iba, userdata string) error {
+func setUserData(api *p2pubapi.API, gis, iba, userdata string, timeout time.Duration) error {
 	info, err := getSystemStorageInfo(api, gis, iba)
 	if err != nil {
 		return err
@@ -197,13 +199,13 @@ func setUserData(api *p2pubapi.API, gis, iba, userdata string) error {
 		return err
 	}
 	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
-		p2pubapi.InService, attachStatus, TIMEOUT); err != nil {
+		p2pubapi.InService, attachStatus, timeout); err != nil {
 		return err
 	}
 	return nil
 }
 
-func restore(api *p2pubapi.API, gis, iba, iar, id string) error {
+func restore(api *p2pubapi.API, gis, iba, iar, id string, timeout time.Duration) error {
 	info, err := getSystemStorageInfo(api, gis, iba)
 	if err != nil {
 		return err
@@ -224,7 +226,7 @@ func restore(api *p2pubapi.API, gis, iba, iar, id string) error {
 		return err
 	}
 	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
-		p2pubapi.InService, attachStatus, TIMEOUT); err != nil {
+		p2pubapi.InService, attachStatus, timeout); err != nil {
 		return err
 	}
 	return nil
@@ -262,6 +264,7 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	args := protocol.SystemStorageAdd{
 		GisServiceCode: gis,
@@ -286,7 +289,7 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 	iba := res.ServiceCode
 
 	if err := p2pubapi.WaitSystemStorage(api, gis, iba,
-		p2pubapi.InService, p2pubapi.NotAttached, TIMEOUT); err != nil {
+		p2pubapi.InService, p2pubapi.NotAttached, timeout); err != nil {
 		return err
 	}
 
@@ -297,7 +300,7 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 		if src_gis != gis {
 			return errors.New("Inter-contract image restore is currently not supported.")
 		}
-		if err := restore(api, gis, iba, src_iar, image_id); err != nil {
+		if err := restore(api, gis, iba, src_iar, image_id, timeout); err != nil {
 			return err
 		}
 	}
@@ -309,19 +312,19 @@ func resourceSystemStorageCreate(d *schema.ResourceData, m interface{}) error {
 	}
 
 	if d.Get("root_ssh_key") != nil && d.Get("root_ssh_key").(string) != "" {
-		if err := setSSHKey(api, gis, iba, d.Get("root_ssh_key").(string)); err != nil {
+		if err := setSSHKey(api, gis, iba, d.Get("root_ssh_key").(string), timeout); err != nil {
 			return err
 		}
 	}
 
 	if d.Get("root_password") != nil && d.Get("root_password").(string) != "" {
-		if err := setPassword(api, gis, iba, d.Get("root_password").(string)); err != nil {
+		if err := setPassword(api, gis, iba, d.Get("root_password").(string), timeout); err != nil {
 			return err
 		}
 	}
 
 	if d.Get("userdata") != nil && d.Get("userdata").(string) != "" {
-		if err := setUserData(api, gis, iba, d.Get("userdata").(string)); err != nil {
+		if err := setUserData(api, gis, iba, d.Get("userdata").(string), timeout); err != nil {
 			return err
 		}
 	}
@@ -359,6 +362,7 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface{}) error {
 
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
+	timeout := d.Timeout(schema.TimeoutUpdate)
 
 	if !d.HasChange("label") && !d.HasChange("root_ssh_key") && !d.HasChange("root_password") && !d.HasChange("userdata") {
 		return nil
@@ -382,12 +386,12 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface{}) error {
 
 	if d.HasChange("root_ssh_key") {
 		if info.ResourceStatus == p2pubapi.Attached.String() && !vm_stopped {
-			if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "Off"); err != nil {
+			if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "Off", timeout); err != nil {
 				return err
 			}
 			vm_stopped = true
 		}
-		if err := setSSHKey(api, gis, d.Id(), d.Get("root_ssh_key").(string)); err != nil {
+		if err := setSSHKey(api, gis, d.Id(), d.Get("root_ssh_key").(string), timeout); err != nil {
 			return err
 		}
 		d.SetPartial("root_ssh_key")
@@ -395,12 +399,12 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface{}) error {
 
 	if d.HasChange("root_password") {
 		if info.ResourceStatus == p2pubapi.Attached.String() && !vm_stopped {
-			if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "Off"); err != nil {
+			if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "Off", timeout); err != nil {
 				return err
 			}
 			vm_stopped = true
 		}
-		if err := setPassword(api, gis, d.Id(), d.Get("root_password").(string)); err != nil {
+		if err := setPassword(api, gis, d.Id(), d.Get("root_password").(string), timeout); err != nil {
 			return err
 		}
 		d.SetPartial("root_password")
@@ -408,12 +412,12 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface{}) error {
 
 	if d.HasChange("userdata") {
 		if info.ResourceStatus == p2pubapi.Attached.String() && !vm_stopped {
-			if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "Off"); err != nil {
+			if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "Off", timeout); err != nil {
 				return err
 			}
 			vm_stopped = true
 		}
-		if err := setUserData(api, gis, d.Id(), d.Get("userdata").(string)); err != nil {
+		if err := setUserData(api, gis, d.Id(), d.Get("userdata").(string), timeout); err != nil {
 			return err
 		}
 		d.SetPartial("userdata")
@@ -422,7 +426,7 @@ func resourceSystemStorageUpdate(d *schema.ResourceData, m interface{}) error {
 	d.Partial(false)
 
 	if vm_stopped {
-		if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "On"); err != nil {
+		if err := power(api, gis, info.AttachedVirtualServer.ServiceCode, "On", timeout); err != nil {
 			return err
 		}
 	}
@@ -436,7 +440,7 @@ func resourceSystemStorageDelete(d *schema.ResourceData, m interface{}) error {
 	gis := m.(*Context).GisServiceCode
 
 	if err := p2pubapi.WaitSystemStorage(api, gis, d.Id(),
-		p2pubapi.InService, p2pubapi.NotAttached, TIMEOUT); err != nil {
+		p2pubapi.InService, p2pubapi.NotAttached, d.Timeout(schema.TimeoutDefault)); err != nil {
 		return err
 	}
 

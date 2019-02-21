@@ -555,6 +555,7 @@ func addTrafficIp(api *p2pubapi.API, gisServiceCode, iflServiceCode, name, addre
 func resourceLoadBalancerCreate(d *schema.ResourceData, m interface{}) error {
 	api := m.(*Context).API
 	gis := m.(*Context).GisServiceCode
+	timeout := d.Timeout(schema.TimeoutCreate)
 
 	var servicecode string
 	var err error
@@ -562,7 +563,7 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, m interface{}) error {
 		return err
 	}
 
-	if err := waitLoadBalancer(api, gis, servicecode, p2pubapi.InService, p2pubapi.Initialized, TIMEOUT); err != nil {
+	if err := waitLoadBalancer(api, gis, servicecode, p2pubapi.InService, p2pubapi.Initialized, timeout); err != nil {
 		return err
 	}
 
@@ -587,7 +588,7 @@ func resourceLoadBalancerCreate(d *schema.ResourceData, m interface{}) error {
 		}
 
 		// セットアップが終わるのを待つ
-		if err := waitLoadBalancer(api, gis, servicecode, p2pubapi.InService, p2pubapi.Configured, TIMEOUT); err != nil {
+		if err := waitLoadBalancer(api, gis, servicecode, p2pubapi.InService, p2pubapi.Configured, timeout); err != nil {
 			return err
 		}
 	}

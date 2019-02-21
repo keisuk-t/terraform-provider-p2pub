@@ -16,7 +16,7 @@ func resourceStorageArchive() *schema.Resource {
 		Delete: resourceStorageArchiveDelete,
 
 		Timeouts: &schema.ResourceTimeout{
-		        Default: schema.DefaultTimeout(5 * time.Minute),
+			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 
 		Importer: &schema.ResourceImporter{

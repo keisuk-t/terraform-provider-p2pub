@@ -17,6 +17,7 @@ func resourceAdditionalStorage() *schema.Resource {
 		Delete: resourceAdditionalStorageDelete,
 
 		Timeouts: &schema.ResourceTimeout{
+			Create:  schema.DefaultTimeout(5 * time.Minute),
 			Default: schema.DefaultTimeout(5 * time.Minute),
 		},
 
@@ -132,7 +133,7 @@ func resourceAdditionalStorageCreate(d *schema.ResourceData, m interface{}) erro
 	ib := res.ServiceCode
 
 	if err := p2pubapi.WaitDataStorage(api, gis, ib,
-		p2pubapi.InService, p2pubapi.NotAttached, TIMEOUT); err != nil {
+		p2pubapi.InService, p2pubapi.NotAttached, d.Timeout(schema.TimeoutCreate)); err != nil {
 		return err
 	}
 
@@ -196,7 +197,7 @@ func resourceAdditionalStorageDelete(d *schema.ResourceData, m interface{}) erro
 	gis := m.(*Context).GisServiceCode
 
 	if err := p2pubapi.WaitDataStorage(api, gis, d.Id(),
-		p2pubapi.InService, p2pubapi.NotAttached, TIMEOUT); err != nil {
+		p2pubapi.InService, p2pubapi.NotAttached, d.Timeout(schema.TimeoutDefault)); err != nil {
 		return err
 	}
 
