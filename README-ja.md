@@ -182,7 +182,7 @@ resource "p2pub_global_ip_address" "ip1" {
 |```external_masterhost_address```|マスターホストのアドレス|ipaddr||
 |```external_slavehost_address```|スレーブホストのアドレス|ipaddr||
 |```external_netmask```|ネットマスク|mask||
-|```internal_type```|ネットワーク種別|"PrivateStandard", "Private"|◯〇|
+|```internal_type```|ネットワーク種別|"PrivateStandard", "Private"|◯|
 |```internal_servicecode```|サービスコード|ivlServicecode||
 |```internal_masterhost_address```|マスターホストのアドレス|ipaddr||
 |```internal_slavehost_address```|スレーブホストのアドレス|ipaddr||
